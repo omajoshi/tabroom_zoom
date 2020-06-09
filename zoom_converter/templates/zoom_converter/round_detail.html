@@ -1,0 +1,29 @@
+{% extends "zoom_converter/base.html" %}
+{% block content %}
+<h1>{{tournament}} <a href="{{ round.event.tournament.get_absolute_url }}">pairings</a></h1>
+{% for breakout_room in round.breakout_rooms.all %}
+<h2><a href="{{ breakout_room.file.url }}">CSV File {{ breakout_room.number }}</a></h2>
+<form action="{{ breakout_room.get_absolute_url }}" method="post">
+    {% csrf_token %}
+<input type="url" name="zoom_link" required id="zoom_link">
+<label for="url"><---URL</label>
+<input type="comment" name="extra_info" id="extra_info">
+<label for="extra_info"><---Extra Info</label>
+<input type="checkbox" id="accept" name="accept" required>
+<label for="accept">THIS WILL BE SENT TO REAL PEOPLES.  PLEASE CONFIRM THAT EVERYTHING IS GOOD.</label>
+<input type="submit" value=Submit>
+
+</form>
+
+{% empty %}
+<h2>no csv yet</h2>
+{% endfor %}
+
+{% for pairing in round.pairings.all %}
+<h2>{{ pairing }}</h2>
+{% empty %}
+<h2>nothing was found</h2>
+{% endfor %}
+{% endblock %}
+
+

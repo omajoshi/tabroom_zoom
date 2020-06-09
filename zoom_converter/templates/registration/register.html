@@ -1,0 +1,17 @@
+{% extends "zoom_converter/base.html" %}
+
+
+{% block content %}
+
+
+<form method="post" action="{% url 'zoom_converter:register' %}">
+{% csrf_token %}
+<table>
+{{form}}
+</table>
+
+<input type="submit" value="Register">
+</form>
+
+
+{% endblock %}

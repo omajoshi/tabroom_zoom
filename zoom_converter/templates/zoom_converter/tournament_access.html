@@ -1,0 +1,59 @@
+{% extends "zoom_converter/base.html" %}
+{% block content %}
+<h1>{{ tournament }} access</h1>
+
+<table>
+<tr>
+<th>First Name</th>
+<th>Last Name</th>
+<th>Email</th>
+<th>Role</th>
+{% if user == tournament.director %}
+<th>Make Director</th>
+{% endif %}
+<th>Remove Access</th>
+</tr>
+{% for u in users %}
+<tr>
+<td>{{u.first_name}}</td>
+<td>{{u.last_name}}</td>
+<td>{{u.email}}</td>
+{% if u == tournament.director %}
+<td>Director</td>
+<td></td>
+<td></td>
+{% elif u == user %}
+<td>Admin</td>
+<td></td>
+<td></td>
+{% else %}
+<td>Admin</td>
+{% if user == tournament.director %}
+<td><a href="{% url 'zoom_converter:tournament_access_director' tournament.pk u.pk %}">X</a></td>
+{% else %}
+<td></td>
+{% endif %}
+<td><a href="{% url 'zoom_converter:tournament_access_revoke' tournament.pk u.pk %}">X</a></td>
+
+{% endif %}
+</tr>
+
+{% empty %}
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+{% endfor %}
+</table>
+    <form action="" method="POST">
+        {% csrf_token %}
+        <table>
+        {{ form }}
+        </table>
+        <button type="submit">Add Authenticated User</button>
+    </form>
+
+{% endblock %}

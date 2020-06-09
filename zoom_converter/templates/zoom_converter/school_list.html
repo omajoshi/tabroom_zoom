@@ -1,0 +1,33 @@
+{% extends "zoom_converter/base.html" %}
+{% block content %}
+<h1>{{tournament}} pairings <a href="{% url 'zoom_converter:tournament_update' tournament.pk %}">(rename)</a></h1>
+<h1><a href="{% url 'zoom_converter:tournament_access' tournament.pk %}">Manage Access</a></h1>
+
+{% for event in tournament.events.all %}
+<h2><a href="{{ event.get_absolute_url }}">{{ event.name }}</a></h2>
+{% for round in event.rounds.all %}
+<h3><a href="{{ round.get_absolute_url }}">{{ round.number }}</a></h3>
+{% endfor %}
+{% empty %}
+<h2>nothing was found</h2>
+{% endfor %}
+
+{% for judge in bad_judges %}
+BAD JUDGE {{judge}}
+{% empty %}
+{% endfor  %}
+
+{% for coach in bad_coaches %}
+BAD coach {{coach}}
+{% empty %}
+{% endfor  %}
+
+    <form action="" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <label for="file1"> Upload a file</label>
+        <input type="file" id="file1" name="file">
+        <small>Only accepts CSV files</small>
+        <button type="submit">Upload</button>
+    </form>
+
+{% endblock %}

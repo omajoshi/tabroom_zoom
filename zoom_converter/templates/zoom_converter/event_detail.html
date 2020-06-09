@@ -1,0 +1,9 @@
+{% extends "zoom_converter/base.html" %}
+{% block content %}
+<h1>{{tournament}} <a href="{{ event.tournament.get_absolute_url }}">pairings</a></h1>
+{% for round in event.rounds.all %}
+<h2><a href="{{ round.get_absolute_url }}">{{ round.number }}</a></h2>
+{% empty %}
+<h2>nothing was found</h2>
+{% endfor %}
+{% endblock %}

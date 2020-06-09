@@ -1,0 +1,21 @@
+<p>Hello {{ person }},</p>
+<br>
+<p>BEFORE YOU CLICK THE LINK, please open Zoom, log out, and then log back in using the following email address: {{ person.get_zoom_email }}</p>
+<br>
+<p>Yes, that means you should do the following things:</p>
+<ol>
+<li>Open Zoom on your computer (open the APP on your COMPUTER, NOT on the zoom website)</li>
+<li>Sign out</li>
+<li>Log in with this email: {{ person.get_zoom_email }}</li>
+</ol>
+<p>If you don't follow these steps or if you use a different email, things won't work properly.</p>
+<br>
+<p>Once you have followed those steps, please click the Zoom link below:</p>
+<br>
+<a href="{{ link }}">{{ link }}</a>
+<br>
+<p>Additional info from the tournament:</p>
+<p>{{ extra_info }}</p>
+<br>
+<p>Thanks,</p>
+<p>Tournament Staff</p>
