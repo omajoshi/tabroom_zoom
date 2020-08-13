@@ -114,6 +114,45 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
+STATIC_URL = '/static/'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, "media/")
+STATIC_ROOT = os.path.join(BASE_DIR, "static/")
+
+# Login Things
+
 LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/accounts/login/'
 LOGOUT_REDIRECT_URL = '/'
+AUTH_USER_MODEL = 'zoom_converter.User'
+
+# Server configuration (secrets)
+
+DEBUG = True
+ALLOWED_HOSTS = ["tabroom.omajoshi.com", "157.245.255.28"]
+SECRET_KEY = 'ABCDEFGHIJKLMNOP'
+
+# EMAIL
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = "null"
+EMAIL_HOST_PASSWORD = "null"
+
+'''
+local_settings.py should contain the following settings:
+DEBUG
+ALLOWED_HOSTS
+SECRET_KEY
+EMAIL_BACKEND
+EMAIL_HOST
+EMAIL_USE_TLS
+EMAIL_PORT
+EMAIL_HOST_USER
+EMAIL_HOST_PASSWORD
+'''
+
+# UNCOMMENT THIS WHEN LOCAL SETTINGS ARE SET
+# from .local_settings import 
