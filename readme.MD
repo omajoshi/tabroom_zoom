@@ -12,6 +12,7 @@ Thankfully, this app takes care of that problem.  It functions as a translator f
 
 # How to Use (in progress)
 
+## Pre-Tournament Setup
 1. As a tournament director, the first thing to do is to register using the Register page
 2. Next, upload the tournament table (this contains all of the events and their abbreviations)
 3. Next, upload the full list of judges
@@ -20,8 +21,12 @@ Thankfully, this app takes care of that problem.  It functions as a translator f
 
 Now, the tournament is completely set up.
 
+
+## During each round ...
 During each round, all you do is upload the pairing, and the program will give you a file to upload into Zoom.
+
 Right before you begin the Zoom session, upload that file into "Preset Breakout Rooms"
+
 Right before the round begins, click "Assign Breakout Rooms" and everything works!
 
 
