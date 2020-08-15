@@ -15,6 +15,7 @@ Thankfully, this app takes care of that problem.  It functions as a translator f
 ## Pre-Tournament Setup
 1. As a tournament director, the first thing to do is to register using the Register page
 2. Next, upload the tournament table (this contains all of the events and their abbreviations)
+3. Next, go to Reports, download the full list of schools, and upload that
 3. Next, upload the full list of judges
 4. Next, upload the list of entries in all events
 5. To cross-check, match the entries with the corresponding emails
