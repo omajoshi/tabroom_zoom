@@ -25,7 +25,7 @@ from .tokens import email_token_generator, tabroom_token_generator, zoom_token_g
 from .decorators import activation_required
 from .forms import TournamentAccessForm, CustomUserCreationForm, SchoolContactEmailForm
 from .forms import EmailActivationForm, TabroomActivationForm, ZoomActivationForm
-
+from .helpers import create_pairings
 
 def send_mail(*args, **kwargs):
     print(args)
@@ -186,28 +186,20 @@ def tournament_detail(request, pk):
             round.breakout_rooms.all().delete()
             round.delete()
             round = event.rounds.create(number=headers[1])
+        create_pairings(reader, round)
+        '''
         for row in reader:
             if not row:
                 break
             if row[2]: # debate
-                if row[1] == 'BYE':
-                    continue
-                room = Room.objects.create(number=row[1])
-                team1 = event.teams.get(code=row[2])
-                team2 = event.teams.get(code=row[5])
-                pairing = round.pairings.create(room=room)
-                pairing.teams.add(team1, team2)
-                try:
-                    col = 9
-                    while True:
-                        testing = row[col+2]
-                        judge, e_j = tournament.judges.get_or_create(name=f"{row[col]} {row[col+1]}")
-                        pairing.judges.add(judge)
-                        col += 3
-                except:
-                    pass
-            else: # speech
-                pass
+                print('debate')
+                debate_data(row, round)
+                print('debate')
+            else: #speech
+                print('speech')
+                speech_data(row, round)
+                print('speech')
+        '''
         number = 1
         count = 0
         channel_max_size = 90
@@ -243,6 +235,7 @@ def tournament_detail(request, pk):
     context['bad_judges'] = tournament.judges.filter(tabroom_email=None)
     context['bad_coaches'] = tournament.judges.filter(tabroom_email=None)
     context['bad_competitors'] = tournament.judges.filter(tabroom_email=None)
+    print(context)
     return render(request, "zoom_converter/tournament_detail.html", context=context)
 
 
