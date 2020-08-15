@@ -1,4 +1,4 @@
-from .models import Room, Team
+from .models import Room, Team, School, User
 
 def create_pairings(reader, round):
     num_rooms = 0
@@ -29,3 +29,45 @@ def create_pairings(reader, round):
                     pairing.teams.add(team1)
                 except Team.DoesNotExist:
                     print(f"Potential problem with {row[0]}")
+
+def import_events(reader, tournament):
+    tournament.events.all().delete()
+    for row in reader:
+        if row[0] == "Total":
+            return
+        tournament.events.create(name=row[0], code=row[1])
+
+def import_schools():
+    tournament.schools.clear()
+    good_coaches, new_coaches = [], []
+    for row in reader:
+        email = row[10] if row[10] and '@' in row[10] else None
+        school, school_created = School.objects.get_or_create(name=row[0], contact_email=email)
+        tournament.schools.add(school)
+        if not email:
+            continue
+        candidates = User.objects.filter(email=email)
+        if candidates.exists():
+            school.coach = candidates.get()
+            school.save()
+            school.authorized_users.add(school.coach)
+            # send email to coach saying registration complete
+        else:
+            pass # send email to new coach saying join the website
+        [new_coaches, good_coaches][bool(candidates.exists())].append(email) # filter based on existing account
+    message = "A team you coach has been added to the tournament.  Please activate your account now to gain full access"
+    # mass email all of the new coaches
+    message = "Your team has been entered ... please check email addresses"
+    # mass email all of the good coaches
+    return render(request, "zoom_converter/tournament_detail.html", context=context)
+
+
+def import_judges():
+    return
+
+
+def import_entries_full():
+    return
+
+def import_entries_emails():
+    return

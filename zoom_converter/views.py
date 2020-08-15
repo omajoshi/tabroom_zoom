@@ -25,7 +25,7 @@ from .tokens import email_token_generator, tabroom_token_generator, zoom_token_g
 from .decorators import activation_required
 from .forms import TournamentAccessForm, CustomUserCreationForm, SchoolContactEmailForm
 from .forms import EmailActivationForm, TabroomActivationForm, ZoomActivationForm
-from .helpers import create_pairings
+from .helpers import create_pairings, import_events, import_judges, import_entries_full, import_entries_emails
 
 def send_mail(*args, **kwargs):
     print(args)
@@ -71,6 +71,26 @@ def school_list(request):
     context['schools'] = request.user.schools_authorized.all()
     return render(request, "zoom_converter/school_list.html", context=context)
 
+@login_required
+@activation_required
+def tournament_configure(request, pk):
+    tournament = get_object_or_404(Tournament, pk=pk)
+    user_allowed_tournament(tournament, request.user)
+    context = {'tournament': tournament, 'errors': []}
+    if request.method != "POST":
+        return render(request, "zoom_converter/tournament_configure.html", context=context)
+    if not (events:=request.FILES.get('events')):
+        context['errors'].append('events')
+    if not (schools:=request.FILES.get('schools')):
+        context['errors'].append('schools')
+    if not (judges:=request.FILES.get('judges')):
+        context['errors'].append('judges')
+    if not (entries:=request.FILES.get('entries')):
+        context['errors'].append('entries')
+    if not (emails:=request.FILES.get('emails')):
+        context['errors'].append('emails')
+    return HttpResponse(pk)
+
 
 @login_required
 @activation_required
@@ -86,12 +106,6 @@ def tournament_detail(request, pk):
     file = request.FILES.get('file')
     if not file or not file.name.endswith('.csv'):
         # deal with the forms
-
-
-
-
-
-
         context['error'] = 'Please upload a file in the correct CSV file as per the instructions'
         return render(request, "zoom_converter/tournament_detail.html", context=context)
     data_set = file.read().decode('UTF-8')
@@ -99,40 +113,9 @@ def tournament_detail(request, pk):
     reader = csv.reader(io_string, delimiter=',', quotechar='"')
     headers = next(reader)
     if headers[0] == 'Event' and headers[1] == 'Abbr': # import all events
-        tournament.events.all().delete()
-        for row in reader:
-            if row[0] == "Total":
-                break
-            tournament.events.create(name=row[0], code=row[1])
-
-
-
-
+        import_events(reader, tournament)
     elif headers[0] == 'Name' and headers[1] == 'Shortened': # import all schools and head coaches
-        tournament.schools.clear()
-        good_coaches, new_coaches = [], []
-        for row in reader:
-            email = row[10] if row[10] and '@' in row[10] else None
-            school, school_created = School.objects.get_or_create(name=row[0], contact_email=email)
-            tournament.schools.add(school)
-            if not email:
-                continue
-            candidates = User.objects.filter(email=email)
-            if candidates.exists():
-                school.coach = candidates.get()
-                school.save()
-                school.authorized_users.add(school.coach)
-                # send email to coach saying registration complete
-            else:
-                pass # send email to new coach saying join the website
-            [new_coaches, good_coaches][bool(candidates.exists())].append(email) # filter based on existing account
-        message = "A team you coach has been added to the tournament.  Please activate your account now to gain full access"
-        # mass email all of the new coaches
-
-        message = "Your team has been entered ... please check email addresses"
-        # mass email all of the good coaches
-        return render(request, "zoom_converter/tournament_detail.html", context=context)
-
+        import_schools(reader, tournaments)
     # up to here is bug free
     elif headers[0] == 'Group' and headers[1] == 'Code': # import all judge entries
         new_judges, good_judges, bad_judges = [], [], []
@@ -494,6 +477,5 @@ def profile(request):
         form2 = TabroomActivationForm(instance=user)
         form3 = ZoomActivationForm(instance=user)
     return render(request, 'registration/profile.html', context={'form1': form1, 'form2': form2, 'form3': form3})
-
 
 # Create your views here.

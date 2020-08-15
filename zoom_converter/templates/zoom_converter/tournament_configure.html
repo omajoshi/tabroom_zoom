@@ -1,0 +1,44 @@
+{% extends "zoom_converter/base.html" %}
+{% block content %}
+<h1><a href="{% url 'zoom_converter:tournament_detail' tournament.pk %}">{{tournament}}</a></h1>
+<h1>Configure</h1>
+
+
+<form method="post" action="{% url 'zoom_converter:tournament_configure' tournament.pk %}" enctype="multipart/form-data">
+    {% csrf_token %}
+
+<table>
+    <tr>
+        <td>
+            <input type="file" name="events" id="events" required /> <label for="events">Events</label>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <input type="file" name="schools" id="schools" required /> <label for="schools">Schools</label>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <input type="file" name="judges" id="judges" required /> <label for="judges">Judges</label>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <input type="file" name="entries" id="entries" required /> <label for="entries">Entries</label>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <input type="file" name="emails" id="emails" required /> <label for="emails">Entries with Emails</label>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <input type="submit" value="Configure Tournament" />
+        </td>
+    </tr>
+</table>
+
+</form>
+{% endblock %}

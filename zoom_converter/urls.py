@@ -7,6 +7,7 @@ app_name = 'zoom_converter'
 urlpatterns = [
     path('', views.tournament_list, name='tournament_list'),
     path('<int:pk>/', views.tournament_detail, name='tournament_detail'),
+    path('<int:pk>/configure/', views.tournament_configure, name='tournament_configure'),
     path('<int:pk>/update/', views.TournamentUpdate.as_view(), name='tournament_update'),
     path('<int:pk>/access/', views.tournament_access, name='tournament_access'),
     path('<int:pk>/access/<int:revoke_user>/revoke/', views.tournament_access_revoke, name='tournament_access_revoke'),
