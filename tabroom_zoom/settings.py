@@ -154,4 +154,4 @@ EMAIL_HOST_PASSWORD
 '''
 
 # UNCOMMENT THIS WHEN LOCAL SETTINGS ARE SET
-# from .local_settings import 
+# from .local_settings import *
