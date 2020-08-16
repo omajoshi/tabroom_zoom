@@ -1,5 +1,7 @@
+from datetime import datetime
 import csv, io
 
+from django.core.files.base import ContentFile
 from django.shortcuts import render, get_object_or_404
 
 from .models import Room, School, Event, Team, Person, User
@@ -36,7 +38,7 @@ def parse_pairings(reader, round):
 
 
 
-def generate_pairing_files():
+def generate_pairing_files(round):
     number = 1
     count = 0
     channel_max_size = 90
@@ -64,7 +66,7 @@ def generate_pairing_files():
             total_members.append(member)
             count += 1
     csv_file = ContentFile(buffer.getvalue())
-    csv_file.name = f'{event.code}/breakout {round.number}_{number}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+    csv_file.name = f'{round.event.code}/breakout {round.number}_{number}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
     b = round.breakout_rooms.create(file=csv_file, number=number)
     b.persons.add(*total_members)
     buffer.close()

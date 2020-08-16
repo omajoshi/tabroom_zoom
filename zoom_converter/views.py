@@ -1,11 +1,9 @@
-from datetime import datetime
 from itertools import chain
 import csv, io
 
 from django.contrib import messages
 from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.core.files.base import ContentFile
 from django.core.mail import send_mail
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
@@ -138,7 +136,7 @@ def tournament_detail(request, pk):
             round.delete()
             round = event.rounds.create(number=headers[1])
         parse_pairings(reader, round)
-        generate_pairing_files()
+        generate_pairing_files(round)
     context['bad_judges'] = tournament.judges.filter(tabroom_email=None)
     context['bad_coaches'] = tournament.judges.filter(tabroom_email=None)
     context['bad_competitors'] = tournament.judges.filter(tabroom_email=None)
