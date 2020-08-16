@@ -5,7 +5,8 @@ from . import views
 
 app_name = 'zoom_converter'
 urlpatterns = [
-    path('', views.tournament_list, name='tournament_list'),
+    path('', views.TournamentList.as_view(), name='tournament_list'),
+    path('create/', views.TournamentCreate.as_view(), name='tournament_create'),
     path('<int:pk>/', views.tournament_detail, name='tournament_detail'),
     path('<int:pk>/configure/', views.tournament_configure, name='tournament_configure'),
     path('<int:pk>/update/', views.TournamentUpdate.as_view(), name='tournament_update'),

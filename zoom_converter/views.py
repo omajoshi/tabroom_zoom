@@ -16,8 +16,9 @@ from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.html import strip_tags
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.views.generic import ListView
 from django.views.generic.detail import DetailView
-from django.views.generic.edit import UpdateView
+from django.views.generic.edit import CreateView, UpdateView
 
 from tabroom_zoom.settings import EMAIL_HOST_USER
 from .models import *
@@ -47,21 +48,39 @@ class UserAllowedTournament(UserPassesTestMixin):
         tournament = get_object_or_404(Tournament, pk=self.kwargs.get('tournament', self.kwargs.get('pk')))
         return user_allowed_tournament(tournament, self.request.user)
 
+class ActivationRequiredMixin(UserPassesTestMixin):
+    def test_func(self):
+        if request.user.is_authenticated and not request.user.verified():
+            return False
+        return True
+    def handle_no_permission(self):
+        return redirect('zoom_converter:profile')
 
 @activation_required
 def index(request):
     return HttpResponse('index')
 
 
-@login_required
-@activation_required
-def tournament_list(request):
-    if request.method == "POST":
-        tournament = Tournament.objects.create(name=request.POST['name'], director=request.user)
-        tournament.authorized_users.add(request.user)
-        return redirect(tournament)
-    context = {'tournaments': request.user.tournaments_authorized.all()}
-    return render(request, "zoom_converter/tournament_list.html", context=context)
+
+class TournamentList(ListView, ActivationRequiredMixin):
+    model = Tournament
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tournament_list'] = self.request.user.tournaments_authorized.all()
+        return context
+
+class TournamentCreate(CreateView, LoginRequiredMixin):
+    model = Tournament
+    fields = ["name"]
+    template_name_suffix = "_create"
+
+    def form_valid(self, form):
+        obj = form.instance
+        obj.director=self.request.user
+        obj.save()
+        obj.authorized_users.add(self.request.user)
+        return super().form_valid(form)
 
 
 @login_required
@@ -170,19 +189,6 @@ def tournament_detail(request, pk):
             round.delete()
             round = event.rounds.create(number=headers[1])
         create_pairings(reader, round)
-        '''
-        for row in reader:
-            if not row:
-                break
-            if row[2]: # debate
-                print('debate')
-                debate_data(row, round)
-                print('debate')
-            else: #speech
-                print('speech')
-                speech_data(row, round)
-                print('speech')
-        '''
         number = 1
         count = 0
         channel_max_size = 90
