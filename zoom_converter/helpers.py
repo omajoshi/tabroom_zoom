@@ -1,6 +1,8 @@
+import io
+
 from .models import Room, Team, School, User
 
-def create_pairings(reader, round):
+def parse_pairings(reader, round):
     num_rooms = 0
     while row:=next(reader):
         if not row:
@@ -29,6 +31,41 @@ def create_pairings(reader, round):
                     pairing.teams.add(team1)
                 except Team.DoesNotExist:
                     print(f"Potential problem with {row[0]}")
+
+
+
+def generate_pairing_files():
+    number = 1
+    count = 0
+    channel_max_size = 90
+    total_members = []
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(['Pre-assign Room Name', 'Email Address'])
+    for pairing in round.pairings.all():
+        room = pairing.room
+        pairing_members = [*[member for team in pairing.teams.all() for member in team.members.all()], *list(pairing.judges.all())]
+        if count + len(pairing_members) > channel_max_size - 1:
+            csv_file = ContentFile(buffer.getvalue())
+            csv_file.name = f'{event.code}/breakout {round.number}_{number}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            b = round.breakout_rooms.create(file=csv_file, number=number)
+            b.persons.add(*total_members)
+            buffer.close()
+            total_members = []
+            buffer = io.StringIO()
+            writer = csv.writer(buffer)
+            number += 1
+            count = 0
+            writer.writerow(['Pre-assign Room Name', 'Email Address'])
+        for member in pairing_members:
+            writer.writerow([room, member.get_zoom_email()])
+            total_members.append(member)
+            count += 1
+    csv_file = ContentFile(buffer.getvalue())
+    csv_file.name = f'{event.code}/breakout {round.number}_{number}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+    b = round.breakout_rooms.create(file=csv_file, number=number)
+    b.persons.add(*total_members)
+    buffer.close()
 
 def import_events(reader, tournament):
     tournament.events.all().delete()

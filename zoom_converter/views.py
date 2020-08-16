@@ -3,37 +3,28 @@ from itertools import chain
 import csv, io
 
 from django.contrib import messages
-from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.core.files.base import ContentFile
-from django.core.mail import send_mail as _send_mail
+from django.core.mail import send_mail
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.html import strip_tags
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.generic import ListView
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView
 
 from tabroom_zoom.settings import EMAIL_HOST_USER
 from .models import *
-from .tokens import email_token_generator, tabroom_token_generator, zoom_token_generator
 from .decorators import activation_required
-from .forms import TournamentAccessForm, CustomUserCreationForm, SchoolContactEmailForm
-from .forms import EmailActivationForm, TabroomActivationForm, ZoomActivationForm
-from .helpers import create_pairings, import_events, import_judges, import_entries_full, import_entries_emails
+from .forms import TournamentAccessForm, SchoolContactEmailForm
+from .helpers import parse_pairings, generate_pairing_files
+from .helpers import import_events, import_schools, import_judges, import_entries_full, import_entries_emails
 from .profile_views import *
-
-def send_mail(*args, **kwargs):
-    print(args)
-    print(kwargs)
-    return _send_mail(*args, **kwargs)
-
 
 def user_allowed_tournament(tournament, user, error=True):
     if user.is_superuser or tournament.authorized_users.filter(pk=user.pk).exists():
@@ -44,7 +35,7 @@ def user_allowed_tournament(tournament, user, error=True):
 
 
 
-class UserAllowedTournament(UserPassesTestMixin):
+class UserAllowedTournament(LoginRequiredMixin, UserPassesTestMixin):
     def test_func(self):
         tournament = get_object_or_404(Tournament, pk=self.kwargs.get('tournament', self.kwargs.get('pk')))
         return user_allowed_tournament(tournament, self.request.user)
@@ -189,39 +180,8 @@ def tournament_detail(request, pk):
             round.breakout_rooms.all().delete()
             round.delete()
             round = event.rounds.create(number=headers[1])
-        create_pairings(reader, round)
-        number = 1
-        count = 0
-        channel_max_size = 90
-        total_members = []
-        buffer = io.StringIO()
-        writer = csv.writer(buffer)
-        writer.writerow(['Pre-assign Room Name', 'Email Address'])
-        for pairing in round.pairings.all():
-            room = pairing.room
-            pairing_members = [*[member for team in pairing.teams.all() for member in team.members.all()], *list(pairing.judges.all())]
-            if count + len(pairing_members) > channel_max_size - 1:
-                csv_file = ContentFile(buffer.getvalue())
-                csv_file.name = f'{event.code}/breakout {round.number}_{number}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
-                b = round.breakout_rooms.create(file=csv_file, number=number)
-                b.persons.add(*total_members)
-                buffer.close()
-                total_members = []
-                buffer = io.StringIO()
-                writer = csv.writer(buffer)
-                number += 1
-                count = 0
-                writer.writerow(['Pre-assign Room Name', 'Email Address'])
-            for member in pairing_members:
-                writer.writerow([room, member.get_zoom_email()])
-                total_members.append(member)
-                count += 1
-        csv_file = ContentFile(buffer.getvalue())
-        csv_file.name = f'{event.code}/breakout {round.number}_{number}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
-        b = round.breakout_rooms.create(file=csv_file, number=number)
-        b.persons.add(*total_members)
-        buffer.close()
-
+        parse_pairings(reader, round)
+        generate_pairing_files()
     context['bad_judges'] = tournament.judges.filter(tabroom_email=None)
     context['bad_coaches'] = tournament.judges.filter(tabroom_email=None)
     context['bad_competitors'] = tournament.judges.filter(tabroom_email=None)
@@ -229,7 +189,7 @@ def tournament_detail(request, pk):
     return render(request, "zoom_converter/tournament_detail.html", context=context)
 
 
-class TournamentUpdate(LoginRequiredMixin, UserAllowedTournament, UpdateView):
+class TournamentUpdate(UserAllowedTournament, UpdateView):
     model = Tournament
     fields = ['name']
 
@@ -275,10 +235,10 @@ def tournament_access_director(request, pk, director_user):
         tournament.save()
     return redirect('zoom_converter:tournament_access', pk=pk)
 
-class EventDetail(LoginRequiredMixin, UserAllowedTournament, DetailView):
+class EventDetail(UserAllowedTournament, DetailView):
     model = Event
 
-class RoundDetail(LoginRequiredMixin, UserAllowedTournament, DetailView):
+class RoundDetail(UserAllowedTournament, DetailView):
     model = Round
 
 
@@ -303,4 +263,5 @@ def breakout_room_detail(request, tournament, event, round, pk):
             send_mail(subject, message, EMAIL_HOST_USER, ["omajoshi9@gmail.com"], html_message=message)
             ####send_mail(subject, message, EMAIL_HOST_USER, [person.get_zoom_email()], html_message=message)
     return redirect(breakout_room.round)
+
 # Create your views here.
