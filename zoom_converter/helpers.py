@@ -1,4 +1,4 @@
-import io
+import csv, io
 
 from django.shortcuts import render, get_object_or_404
 
@@ -102,9 +102,21 @@ def import_schools(reader, tournament):
 
 
 def import_judges(reader, tournament):
-    return
+    new_judges, good_judges, bad_judges = [], [], []
+    for row in reader:
+        email = row[10] if row[10] else None
+        name = f'{row[5]} {row[6]}'
+        judge, created = tournament.judges.get_or_create(name=name)
+        if not created:
+            old_email = judge.tabroom_email
+            pass # throw some sort of error that does something with old_email
+        judge.tabroom_email = email
+        judge.save()
+        # send mass mail to new_judges saying fix your account or create it
+        # see if a user exists which is linked to this tabroom account
+        # basically just check if the is_claimed flag is True
 
-def import_entries_full(reader, tournament):
+def import_entries(reader, tournament):
     for row in reader:
         event = get_object_or_404(Event, tournament=tournament, code=row[1])
         school = tournament.schools.get(name=row[4])
@@ -121,7 +133,7 @@ def import_entries_full(reader, tournament):
         except:
             pass
 
-def import_entries_emails(reader, tournament):
+def import_emails(reader, tournament):
     for row in reader:
         event = tournament.events.get(code=row[2])
         team = event.teams.get(code=row[3])
@@ -136,3 +148,16 @@ def import_entries_emails(reader, tournament):
         except:
             pass
 
+
+def validate_csv(file):
+    if not file.name.endswith('.csv'):
+        return False
+    return True
+
+def configure_tournament(tournament, files):
+    for file, function in zip(files, (import_events, import_schools, import_judges, import_entries, import_emails)):
+        data_set = file.read().decode('UTF-8')
+        io_string = io.StringIO(data_set)
+        reader = csv.reader(io_string, delimiter=',', quotechar='"')
+        headers = next(reader)
+        function(reader, tournament)

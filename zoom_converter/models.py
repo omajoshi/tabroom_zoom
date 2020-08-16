@@ -87,6 +87,7 @@ class Tournament(models.Model):
     schools = models.ManyToManyField(School, blank=True, related_name='tournaments')
     judges = models.ManyToManyField(Person, blank=True, related_name='tournaments')
     real_tournament = models.BooleanField(default=False)
+    configured = models.BooleanField(default=False)
     def __str__(self):
         return f"{self.name}"
     def get_absolute_url(self):

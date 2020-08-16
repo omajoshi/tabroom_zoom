@@ -21,8 +21,8 @@ from tabroom_zoom.settings import EMAIL_HOST_USER
 from .models import *
 from .decorators import activation_required
 from .forms import TournamentAccessForm, SchoolContactEmailForm
-from .helpers import parse_pairings, generate_pairing_files
-from .helpers import import_events, import_schools, import_judges, import_entries_full, import_entries_emails
+from .helpers import parse_pairings, generate_pairing_files, validate_csv, configure_tournament
+from .helpers import import_events, import_schools, import_judges, import_entries, import_emails
 from .profile_views import *
 
 def user_allowed_tournament(tournament, user, error=True):
@@ -90,7 +90,25 @@ def tournament_configure(request, pk):
         context['errors'].append('entries')
     if not (emails:=request.FILES.get('emails')):
         context['errors'].append('emails')
-    return HttpResponse(pk)
+    if not context['errors']:
+        files = (events, schools, judges, entries, emails)
+        try:
+            for file in files:
+                if not validate_csv(file):
+                    raise Exception("File was of invalid type - OAJ")
+            configure_tournament(tournament, files)
+            return redirect(tournament)
+        except Exception as e:
+            raise e
+    tournament.configured = True
+    tournament.save()
+    return render(request, "zoom_converter/tournament_configure.html", context=context)
+
+@activation_required
+def pairing_create(request, pk):
+    tournament = get_object_or_404(Tournament, pk=pk)
+    user_allowed_tournament(tournament, request.user)
+
 
 
 @activation_required
@@ -112,31 +130,7 @@ def tournament_detail(request, pk):
     io_string = io.StringIO(data_set)
     reader = csv.reader(io_string, delimiter=',', quotechar='"')
     headers = next(reader)
-    if headers[0] == 'Event' and headers[1] == 'Abbr': # import all events
-        import_events(reader, tournament)
-    elif headers[0] == 'Name' and headers[1] == 'Shortened': # import all schools and head coaches
-        import_schools(reader, tournament)
-    # up to here is bug free
-    elif headers[0] == 'Group' and headers[1] == 'Code': # import all judge entries
-        new_judges, good_judges, bad_judges = [], [], []
-        for row in reader:
-            email = row[10] if row[10] else None
-            name = f'{row[5]} {row[6]}'
-            judge, created = tournament.judges.get_or_create(name=name)
-            if not created:
-                old_email = judge.tabroom_email
-                pass # throw some sort of error that does something with old_email
-
-            judge.tabroom_email = email
-            judge.save()
-        # send mass mail to new_judges saying fix your account or create it
-        # see if a user exists which is linked to this tabroom account
-        # basically just check if the is_claimed flag is True
-    elif headers[0] == 'Code' and headers[1] == 'Event': # import all teams
-        import_entries_full(reader, tournament)
-    elif headers[0] == 'School' and headers[1] == 'SchoolCode': # try to match users with persons
-        import_entries_emails(reader, tournament)
-    elif headers[0] in t_events:
+    if headers[0] in t_events:
         event = tournament.events.get(name=headers[0])
         round, created = event.rounds.get_or_create(number=headers[1])
         if not created:

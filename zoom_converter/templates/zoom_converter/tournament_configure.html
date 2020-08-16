@@ -7,6 +7,9 @@
 <form method="post" action="{% url 'zoom_converter:tournament_configure' tournament.pk %}" enctype="multipart/form-data">
     {% csrf_token %}
 
+{% if errors %}
+<p style="color:red;">There was an error</p>
+{% endif %}
 <table>
     <tr>
         <td>
