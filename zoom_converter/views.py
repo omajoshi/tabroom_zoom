@@ -3,7 +3,6 @@ from itertools import chain
 import csv, io
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.core.files.base import ContentFile
@@ -34,13 +33,7 @@ def user_allowed_tournament(tournament, user, error=True):
     return False
 
 
-
-class UserAllowedTournament(LoginRequiredMixin, UserPassesTestMixin):
-    def test_func(self):
-        tournament = get_object_or_404(Tournament, pk=self.kwargs.get('tournament', self.kwargs.get('pk')))
-        return user_allowed_tournament(tournament, self.request.user)
-
-class ActivationRequiredMixin(UserPassesTestMixin):
+class ActivationRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     def test_func(self):
         if request.user.is_authenticated and not request.user.verified():
             return False
@@ -48,13 +41,12 @@ class ActivationRequiredMixin(UserPassesTestMixin):
     def handle_no_permission(self):
         return redirect('zoom_converter:profile')
 
-@activation_required
-def index(request):
-    return HttpResponse('index')
+class UserAllowedTournament(ActivationRequiredMixin):
+    def test_func(self):
+        tournament = get_object_or_404(Tournament, pk=self.kwargs.get('tournament', self.kwargs.get('pk')))
+        return user_allowed_tournament(tournament, self.request.user)
 
-
-
-class TournamentList(ListView, ActivationRequiredMixin):
+class TournamentList(ActivationRequiredMixin, ListView):
     model = Tournament
 
     def get_context_data(self, *args, **kwargs):
@@ -62,7 +54,7 @@ class TournamentList(ListView, ActivationRequiredMixin):
         context['tournament_list'] = self.request.user.tournaments_authorized.all()
         return context
 
-class TournamentCreate(CreateView, LoginRequiredMixin):
+class TournamentCreate(ActivationRequiredMixin, CreateView):
     model = Tournament
     fields = ["name"]
     template_name_suffix = "_create"
@@ -75,14 +67,12 @@ class TournamentCreate(CreateView, LoginRequiredMixin):
         return super().form_valid(form)
 
 
-@login_required
 @activation_required
 def school_list(request):
     context = {}
     context['schools'] = request.user.schools_authorized.all()
     return render(request, "zoom_converter/school_list.html", context=context)
 
-@login_required
 @activation_required
 def tournament_configure(request, pk):
     tournament = get_object_or_404(Tournament, pk=pk)
@@ -103,7 +93,6 @@ def tournament_configure(request, pk):
     return HttpResponse(pk)
 
 
-@login_required
 @activation_required
 def tournament_detail(request, pk):
     tournament = get_object_or_404(Tournament, pk=pk)
@@ -126,7 +115,7 @@ def tournament_detail(request, pk):
     if headers[0] == 'Event' and headers[1] == 'Abbr': # import all events
         import_events(reader, tournament)
     elif headers[0] == 'Name' and headers[1] == 'Shortened': # import all schools and head coaches
-        import_schools(reader, tournaments)
+        import_schools(reader, tournament)
     # up to here is bug free
     elif headers[0] == 'Group' and headers[1] == 'Code': # import all judge entries
         new_judges, good_judges, bad_judges = [], [], []
@@ -144,35 +133,9 @@ def tournament_detail(request, pk):
         # see if a user exists which is linked to this tabroom account
         # basically just check if the is_claimed flag is True
     elif headers[0] == 'Code' and headers[1] == 'Event': # import all teams
-        for row in reader:
-            event = get_object_or_404(Event, tournament=tournament, code=row[1])
-            school = tournament.schools.get(name=row[4])
-            team = event.teams.create(school=school, code=row[0])
-            try:
-                col = 13
-                while True:
-                    testing = row[col+2]
-                    person, create = Person.objects.get_or_create(school=school, name=row[col])
-                    team.members.add(person)
-                    col += 3
-            except:
-                pass
-
+        import_entries_full(reader, tournament)
     elif headers[0] == 'School' and headers[1] == 'SchoolCode': # try to match users with persons
-        for row in reader:
-            event = tournament.events.get(code=row[2])
-            team = event.teams.get(code=row[3])
-            try:
-                col = 5
-                while True:
-                    if '@' in row[col+2] and '@' not in row[col+1]:
-                        member = team.members.get(name=f'{row[col]} {row[col+1]}')
-                        member.tabroom_email = row[col+2]
-                        member.save()
-                    col += 1
-            except:
-                pass
-
+        import_entries_emails(reader, tournament)
     elif headers[0] in t_events:
         event = tournament.events.get(name=headers[0])
         round, created = event.rounds.get_or_create(number=headers[1])
@@ -185,7 +148,6 @@ def tournament_detail(request, pk):
     context['bad_judges'] = tournament.judges.filter(tabroom_email=None)
     context['bad_coaches'] = tournament.judges.filter(tabroom_email=None)
     context['bad_competitors'] = tournament.judges.filter(tabroom_email=None)
-    print(context)
     return render(request, "zoom_converter/tournament_detail.html", context=context)
 
 
@@ -194,7 +156,6 @@ class TournamentUpdate(UserAllowedTournament, UpdateView):
     fields = ['name']
 
 
-@login_required
 @activation_required
 def tournament_access(request, pk):
     tournament = get_object_or_404(Tournament, pk=pk)
@@ -214,7 +175,6 @@ def tournament_access(request, pk):
     users = tournament.authorized_users.all()
     return render(request, "zoom_converter/tournament_access.html", context={'tournament': tournament, 'form': form, 'users': users})
 
-@login_required
 @activation_required
 def tournament_access_revoke(request, pk, revoke_user):
     tournament = get_object_or_404(Tournament, pk=pk)
@@ -224,7 +184,6 @@ def tournament_access_revoke(request, pk, revoke_user):
         tournament.authorized_users.remove(u)
     return redirect('zoom_converter:tournament_access', pk=pk)
 
-@login_required
 @activation_required
 def tournament_access_director(request, pk, director_user):
     tournament = get_object_or_404(Tournament, pk=pk)
@@ -242,7 +201,6 @@ class RoundDetail(UserAllowedTournament, DetailView):
     model = Round
 
 
-@login_required
 @activation_required
 def breakout_room_detail(request, tournament, event, round, pk):
     breakout_room = get_object_or_404(BreakoutRoom, pk=pk)
@@ -265,3 +223,5 @@ def breakout_room_detail(request, tournament, event, round, pk):
     return redirect(breakout_room.round)
 
 # Create your views here.
+
+

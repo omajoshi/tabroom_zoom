@@ -1,6 +1,8 @@
 import io
 
-from .models import Room, Team, School, User
+from django.shortcuts import render, get_object_or_404
+
+from .models import Room, School, Event, Team, Person, User
 
 def parse_pairings(reader, round):
     num_rooms = 0
@@ -74,7 +76,7 @@ def import_events(reader, tournament):
             return
         tournament.events.create(name=row[0], code=row[1])
 
-def import_schools():
+def import_schools(reader, tournament):
     tournament.schools.clear()
     good_coaches, new_coaches = [], []
     for row in reader:
@@ -94,17 +96,43 @@ def import_schools():
         [new_coaches, good_coaches][bool(candidates.exists())].append(email) # filter based on existing account
     message = "A team you coach has been added to the tournament.  Please activate your account now to gain full access"
     # mass email all of the new coaches
+
     message = "Your team has been entered ... please check email addresses"
     # mass email all of the good coaches
-    return render(request, "zoom_converter/tournament_detail.html", context=context)
 
 
-def import_judges():
+def import_judges(reader, tournament):
     return
 
+def import_entries_full(reader, tournament):
+    for row in reader:
+        event = get_object_or_404(Event, tournament=tournament, code=row[1])
+        school = tournament.schools.get(name=row[4])
+        team, created = event.teams.get_or_create(school=school, code=row[0])
+        if not created:
+            continue
+        try:
+            col = 13
+            while True:
+                testing = row[col+2]
+                person, created = Person.objects.get_or_create(school=school, name=row[col])
+                team.members.add(person)
+                col += 3
+        except:
+            pass
 
-def import_entries_full():
-    return
+def import_entries_emails(reader, tournament):
+    for row in reader:
+        event = tournament.events.get(code=row[2])
+        team = event.teams.get(code=row[3])
+        try:
+            col = 5
+            while True:
+                if '@' in row[col+2] and '@' not in row[col+1]:
+                    member = team.members.get(name=f'{row[col]} {row[col+1]}')
+                    member.tabroom_email = row[col+2]
+                    member.save()
+                col += 1
+        except:
+            pass
 
-def import_entries_emails():
-    return
