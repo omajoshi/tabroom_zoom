@@ -6,6 +6,7 @@ from django.http import HttpResponse
 from django.urls import reverse
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
 
 from .forms import EmailActivationForm, TabroomActivationForm, ZoomActivationForm, CustomUserCreationForm
 from .models import User

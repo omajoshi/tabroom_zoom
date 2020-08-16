@@ -35,7 +35,7 @@ def user_allowed_tournament(tournament, user, error=True):
 
 class ActivationRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     def test_func(self):
-        if request.user.is_authenticated and not request.user.verified():
+        if self.request.user.is_authenticated and not self.request.user.verified():
             return False
         return True
     def handle_no_permission(self):
