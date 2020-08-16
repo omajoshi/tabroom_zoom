@@ -1,5 +1,16 @@
+from django.utils.encoding import force_bytes
+from django.template.loader import render_to_string
+from django.contrib.auth import login
+from django.core.mail import send_mail
+from django.http import HttpResponse
+from django.urls import reverse
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.contrib.auth.decorators import login_required
+
+from .forms import EmailActivationForm, TabroomActivationForm, ZoomActivationForm, CustomUserCreationForm
+from .models import User
+from .tokens import email_token_generator, tabroom_token_generator, zoom_token_generator
+
 
 def email_activation_helper(request): # not a view!!!
     user = request.user
