@@ -1,8 +1,15 @@
 {% extends "zoom_converter/base.html" %}
 {% block content %}
-<h1>{{tournament}} <a href="{% url 'zoom_converter:tournament_update' tournament.pk %}">(rename)</a></h1>
-<h1><a href="{% url 'zoom_converter:tournament_configure' tournament.pk %}">Configure</a></h1>
-<h2><a href="{% url 'zoom_converter:tournament_access' tournament.pk %}">Manage Access</a></h2>
+<div class="body-header">
+<h1 class="title">{{tournament}}</h1>
+<h2 class="manage">Manage</h2>
+<div class="clear"></div>
+<h4 class="edit-item"><a href="{% url 'zoom_converter:tournament_update' tournament.pk %}">Rename</a></h4>
+{% if not tournament.configured %}
+<h4 class="edit-item"><a href="{% url 'zoom_converter:tournament_configure' tournament.pk %}">Initial Configuration</a></h4>
+{% endif %}
+<h4 class="edit-item"><a href="{% url 'zoom_converter:tournament_access' tournament.pk %}">Manage Access</a></h4>
+</div>
 
 <table>
 {% for event in tournament.events.all %}

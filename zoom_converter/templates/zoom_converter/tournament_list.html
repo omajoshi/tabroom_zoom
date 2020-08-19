@@ -1,11 +1,15 @@
 {% extends "zoom_converter/base.html" %}
 {% block content %}
-<h1><a href="{% url 'zoom_converter:tournament_create' %}">Create Tournament</a></h1>
+<h4 class="edit-item"><a href="{% url 'zoom_converter:tournament_create' %}">Create Tournament</a></h4>
 
-<h1>Manage My Tournaments</h1>
+<h1 class="title">Home</h1>
+
+<h3 class="title">Manage My Tournaments</h3>
+<ul>
 {% for tournament in tournament_list %}
-<h2><a href="{{ tournament.get_absolute_url }}">{{ tournament.name }}</a></h2>
+<li><a href="{{ tournament.get_absolute_url }}">{{ tournament.name }}</a></li>
 {% empty %}
-<h2>nothing was found</h2>
+<li>nothing was found</li>
 {% endfor %}
+</ul>
 {% endblock %}

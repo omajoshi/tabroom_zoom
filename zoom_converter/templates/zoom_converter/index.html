@@ -9,7 +9,7 @@
     </form>
 
 
-<h1>Manage My Entries</h1>
+<h1 class="title">Manage My Entries</h1>
 {% for tournament in tournaments_entered %}
 <h2><a href="{{ tournament.get_absolute_url }}">{{ tournament.name }}</a></h2>
 {% empty %}
@@ -17,7 +17,7 @@
 {% endfor %}
 
 
-<h1>Manage My Tournaments</h1>
+<h1 class="title">Manage My Tournaments</h1>
 {% for tournament in tournaments %}
 <h2><a href="{{ tournament.get_absolute_url }}">{{ tournament.name }}</a></h2>
 {% empty %}
