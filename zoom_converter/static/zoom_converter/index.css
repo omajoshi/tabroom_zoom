@@ -11,7 +11,7 @@ body {
     background-color: #eeeeee;
     min-height: 500px;
     border-radius:5px;
-}    
+}
 
 .content {
     padding: 1% 5% 1% 5%;
@@ -45,10 +45,11 @@ body {
     text-align: center;
 }
 
-.manage {
+.edit-item {
     text-align: right;
 }
 
-.edit-item {
+
+.manage {
     text-align: right;
 }
