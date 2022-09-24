@@ -158,7 +158,7 @@ def validate_csv(file):
 
 def configure_tournament(tournament, files):
     for file, function in zip(files, (import_events, import_schools, import_judges, import_entries, import_emails)):
-        data_set = file.read().decode('UTF-8')
+        data_set = file.read().decode('latin-1') #UTF-8')
         io_string = io.StringIO(data_set)
         reader = csv.reader(io_string, delimiter=',', quotechar='"')
         headers = next(reader)

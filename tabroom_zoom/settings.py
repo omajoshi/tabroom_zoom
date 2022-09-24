@@ -154,4 +154,9 @@ EMAIL_HOST_PASSWORD
 '''
 
 # UNCOMMENT THIS WHEN LOCAL SETTINGS ARE SET
-# from .local_settings import *
+from .local_settings import *
+
+DEBUG = True
+
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+EMAIL_FILE_PATH = '/home/omajoshi9/tabroom_zoom/tabroom_zoom/app-messages' # change this to a proper location
